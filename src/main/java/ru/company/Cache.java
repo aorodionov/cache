@@ -6,4 +6,8 @@ public interface Cache<K, V> {
     V remove(K key);
 
     V get(K key);
+
+    void invalidate();
+
+    void clear();
 }

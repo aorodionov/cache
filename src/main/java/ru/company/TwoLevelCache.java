@@ -10,15 +10,28 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
         this.secondLevelCache = secondLevelCache;
     }
 
+    @Override
     public void put(K key, V value) {
 
     }
 
+    @Override
     public V remove(K key) {
         return null;
     }
 
+    @Override
     public V get(K key) {
         return null;
+    }
+
+    @Override
+    public void invalidate() {
+
+    }
+
+    @Override
+    public void clear() {
+
     }
 }
