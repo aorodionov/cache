@@ -37,6 +37,7 @@ public class RAMCache<K, V> implements Cache<K, V> {
 
     @Override
     public void clear(){
+        invalidator.clear();
         storage.clear();
     }
 

@@ -39,6 +39,11 @@ public class SimpleInvalidator<K> implements Invalidator<K> {
     }
 
     @Override
+    public void clear() {
+        storage.clear();
+    }
+
+    @Override
     public void unregister(K key) {
         storage.remove(key);
     }

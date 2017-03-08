@@ -19,4 +19,15 @@ public class RAMCacheTest {
         }
         Assertions.assertEquals(cache.size(),10);
     }
+
+    @Test
+    public void cacheCleaningTest(){
+        for (int i = 0; i < 50; i++) {
+            cache.put(String.valueOf(i),String.valueOf(i));
+        }
+        cache.clear();
+        Assertions.assertEquals(0,cache.size());
+        cache.put("OneMore","OneMore");
+        Assertions.assertEquals(1,cache.size());
+    }
 }
