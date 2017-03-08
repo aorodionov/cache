@@ -34,4 +34,9 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
     public void clear() {
 
     }
+
+    @Override
+    public int size() {
+        return 0;
+    }
 }

@@ -21,6 +21,7 @@ public class RAMCache<K, V> implements Cache<K, V> {
 
     @Override
     public V remove(K key) {
+        invalidator.unregister(key);
         return storage.remove(key);
     }
 
@@ -37,5 +38,10 @@ public class RAMCache<K, V> implements Cache<K, V> {
     @Override
     public void clear(){
         storage.clear();
+    }
+
+    @Override
+    public int size() {
+        return storage.size();
     }
 }

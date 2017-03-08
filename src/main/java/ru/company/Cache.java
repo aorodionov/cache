@@ -10,4 +10,6 @@ public interface Cache<K, V> {
     void invalidate();
 
     void clear();
+
+    int size();
 }
