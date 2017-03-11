@@ -1,4 +1,4 @@
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.company.Metadata;
 import ru.company.SimpleMetadata;
@@ -9,10 +9,10 @@ import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SimpleMetadataTest {
-    private static Metadata metadata;
+    private Metadata metadata;
 
-    @BeforeAll
-    public static void init() {
+    @BeforeEach
+    public void init() {
         metadata = new SimpleMetadata();
     }
 
