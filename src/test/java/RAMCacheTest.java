@@ -13,7 +13,7 @@ public class RAMCacheTest {
     }
 
     @Test
-    public void cachePuttingTest(){
+    public void cachePut_SuccessTest(){
         for (int i = 0; i < 50; i++) {
             cache.put(String.valueOf(i),String.valueOf(i));
         }
@@ -21,7 +21,7 @@ public class RAMCacheTest {
     }
 
     @Test
-    public void cacheCleaningTest(){
+    public void cacheClear_SuccessTest(){
         for (int i = 0; i < 50; i++) {
             cache.put(String.valueOf(i),String.valueOf(i));
         }
