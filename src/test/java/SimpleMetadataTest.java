@@ -1,4 +1,3 @@
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import ru.company.Metadata;
@@ -7,7 +6,7 @@ import ru.company.SimpleMetadata;
 import java.lang.reflect.Field;
 
 import static java.lang.Thread.sleep;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SimpleMetadataTest {
     private static Metadata metadata;
