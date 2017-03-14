@@ -4,14 +4,14 @@ import org.junit.jupiter.api.Test;
 import ru.company.Invalidator;
 import ru.company.RAMCache;
 import ru.company.SimpleInvalidator;
-import ru.company.SimpleMetadata;
+import ru.company.SimpleMetadataFactory;
 
 public class RAMCacheTest {
     private RAMCache<String, String> cache;
 
     @BeforeEach
     public void init() {
-        Invalidator<String> invalidator = new SimpleInvalidator<>(SimpleMetadata.class);
+        Invalidator<String> invalidator = new SimpleInvalidator<>(new SimpleMetadataFactory());
         cache = new RAMCache<>(invalidator, 10);
     }
 
