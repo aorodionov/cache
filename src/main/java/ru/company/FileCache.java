@@ -1,11 +1,11 @@
 package ru.company;
 
-import java.io.File;
+import java.net.URL;
 
 public class FileCache<K, V> implements Cache<K, V> {
-    private final File source;
+    private final URL source;
 
-    public FileCache(File source) {
+    public FileCache(URL source, Invalidator<String> invalidator) {
         this.source = source;
     }
 
