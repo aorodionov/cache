@@ -5,16 +5,16 @@ import java.util.HashMap;
 public class RAMCache<K, V> implements Cache<K, V> {
     private final HashMap<K, V> storage = new HashMap<>();
     private final Invalidator<K> invalidator;
-    private final int size;
+    private final int maxSize;
 
-    public RAMCache(Invalidator<K> invalidator, int size) {
+    public RAMCache(Invalidator<K> invalidator, int maxSize) {
         this.invalidator = invalidator;
-        this.size = size;
+        this.maxSize = maxSize;
     }
 
     @Override
     public void put(K key, V value) {
-        if (storage.size() >= size) invalidate();
+        if (storage.size() >= maxSize) invalidate();
         storage.put(key, value);
         invalidator.register(key);
     }
