@@ -5,7 +5,10 @@ import ru.company.Invalidator;
 import ru.company.SimpleInvalidator;
 import ru.company.SimpleMetadataFactory;
 
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -13,12 +16,13 @@ public class FileCacheTest {
     private FileCache<String, String> cache;
 
     @BeforeEach
-    public void init() {
+    public void init() throws URISyntaxException {
         URL testFileLocation = Thread.currentThread()
                 .getContextClassLoader()
                 .getResource("testfile.cache");
+        Path path = Paths.get(testFileLocation.toURI());
         Invalidator<String> invalidator = new SimpleInvalidator<>(new SimpleMetadataFactory());
-        cache = new FileCache<>(testFileLocation, invalidator);
+        cache = new FileCache<>(path, invalidator, 10);
     }
 
     @Test
@@ -26,7 +30,7 @@ public class FileCacheTest {
         for (int i = 0; i < 50; i++) {
             cache.put(String.valueOf(i), String.valueOf(i));
         }
-        assertEquals(cache.size(), 50);
+        assertEquals(cache.size(), 10);
     }
 
     @Test
@@ -37,6 +41,7 @@ public class FileCacheTest {
 
     @Test
     public void cacheRemove_SuccessTest() {
+        cache.clear();
         cache.put("One", "Two");
         cache.put("Three", "Four");
         assertEquals(2, cache.size());
@@ -51,9 +56,9 @@ public class FileCacheTest {
         for (int i = 0; i < 50; i++) {
             cache.put(String.valueOf(i), String.valueOf(i));
         }
-        assertEquals(cache.size(), 50);
+        assertEquals(cache.size(), 10);
         cache.clear();
-        assertEquals(cache.size(), 50);
+        assertEquals(cache.size(), 0);
     }
 
     @Test
@@ -61,8 +66,8 @@ public class FileCacheTest {
         for (int i = 0; i < 50; i++) {
             cache.put(String.valueOf(i), String.valueOf(i));
         }
-        assertEquals(cache.size(), 50);
+        assertEquals(cache.size(), 10);
         cache.invalidate();
-        assertEquals(cache.size(), 49);
+        assertEquals(cache.size(), 9);
     }
 }

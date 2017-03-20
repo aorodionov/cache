@@ -2,7 +2,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.company.Invalidator;
 import ru.company.SimpleInvalidator;
-import ru.company.SimpleMetadata;
+import ru.company.SimpleMetadataFactory;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -19,7 +19,7 @@ public class SimpleInvalidatorTest {
 
     @BeforeEach
     public void init() throws IllegalAccessException, NoSuchFieldException {
-        invalidator = new SimpleInvalidator<>(SimpleMetadata.class);
+        invalidator = new SimpleInvalidator<>(new SimpleMetadataFactory());
         Field storageField = invalidator.getClass().getDeclaredField("storage");
         storageField.setAccessible(true);
         storage = (HashMap) storageField.get(invalidator);
