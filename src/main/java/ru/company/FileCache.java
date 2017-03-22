@@ -5,9 +5,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,65 +15,44 @@ import java.util.concurrent.Future;
 
 public class FileCache<K, V> implements Cache<K, V> {
     private static final int TWO_KB = 2048;
-    private List<K> keyStorage;
+    private HashMap<K, Path> keyPathStorage;
     private Invalidator<K> invalidator;
     private int maxSize;
     private ExecutorService executor;
-    private Path path;
+    private Path directory;
 
-    public FileCache(Path path, Invalidator<K> invalidator, int maxSize) {
+    public FileCache(Path directory, Invalidator<K> invalidator, int maxSize) {
         this.invalidator = invalidator;
         this.maxSize = maxSize;
         this.executor = Executors.newSingleThreadExecutor();
-        this.path = path;
-        keyStorage = new ArrayList<>();
-        if (!Files.exists(path)) {
-            writeToFile(new HashMap<>());
-            try {
-                Files.createFile(path);
-            } catch (IOException e) {
-                throw new RuntimeException("Cannot create cache file by path: " + path, e);
-            }
-        } else {
-            HashMap<K, V> map;
-            try {
-                map = executor.submit(this::readFile).get();
-                map.keySet().forEach((key) -> {
-                    this.invalidator.register(key);
-                    keyStorage.add(key);
-                });
-            } catch (InterruptedException | ExecutionException e) {
-                writeToFile(new HashMap<>());
-            }
-
-        }
+        this.directory = directory;
+        this.keyPathStorage = new HashMap<>();
     }
 
     @Override
-    public void put(K key, V value) {
-        if (keyStorage.size() >= maxSize) {
-            invalidate();
-        }
-        putToFile(key, value);
+    public Map<K, V> put(K key, V value) {
+        String newFileName = getNewFileName();
+        Path newPath = putToFile(newFileName, value);
         invalidator.register(key);
-        keyStorage.add(key);
+        keyPathStorage.put(key, newPath);
+        if (keyPathStorage.size() >= maxSize) return invalidate();
+        return null;
     }
 
     @Override
     public V remove(K key) {
-        Future<V> future = executor.submit(() -> removeFromFile(key));
+        V value = removeFromFile(key);
         invalidator.unregister(key);
-        keyStorage.remove(key);
-        try {
-            return future.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Error occurred while removing " + key + " from file ", e);
-        }
+        keyPathStorage.remove(key);
+        return value;
     }
 
     @Override
     public V get(K key) {
-        Future<V> future = executor.submit(() -> readFile().get(key));
+        Path path = keyPathStorage.get(key);
+        if (path == null || !Files.exists(path)) return null;
+        Future<V> future = executor.submit(() -> readFile(path));
+        invalidator.register(key);
         try {
             return future.get();
         } catch (InterruptedException | ExecutionException e) {
@@ -82,70 +61,83 @@ public class FileCache<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public void invalidate() {
+    public HashMap<K, V> invalidate() {
+        HashMap<K, V> expired = new HashMap<>();
         K expiredKey = invalidator.getExpiredKey();
-        invalidator.unregister(expiredKey);
-        keyStorage.remove(expiredKey);
-        remove(expiredKey);
+        V value = remove(expiredKey);
+        expired.put(expiredKey, value);
+        keyPathStorage.remove(expiredKey);
+        return expired;
     }
 
     @Override
     public void clear() {
         try {
-            Files.delete(path);
-            Files.createFile(path);
-            writeToFile(new HashMap<>());
-            keyStorage.clear();
-            invalidator.clear();
+            Files.list(directory).forEach((path) -> {
+                try {
+                    Files.delete(path);
+                } catch (IOException e) {
+                    throw new RuntimeException("Error occurred while clearing files", e);
+                }
+            });
         } catch (IOException e) {
-            throw new RuntimeException("Error occurred while clearing the file", e);
+            throw new RuntimeException("Error occurred while clearing files in directory: " + directory, e);
         }
+        keyPathStorage.clear();
+        invalidator.clear();
     }
 
     @Override
     public int size() {
-        return keyStorage.size();
+        return keyPathStorage.size();
     }
 
-    private void putToFile(K key, V value) {
-        HashMap<K, V> map;
-        try {
-            map = executor.submit(this::readFile).get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Error occurred while reading the file ", e);
+    private Path putToFile(String filename, V value) {
+        Path resolvedPath = directory.resolve(filename);
+        if (!Files.exists(resolvedPath)) try {
+            Files.createDirectories(resolvedPath.getParent());
+            Files.createFile(resolvedPath);
+        } catch (IOException e) {
+            throw new RuntimeException("Error occurred while creating the file: " + resolvedPath, e);
         }
-        map.put(key, value);
-        executor.submit(() -> writeToFile(map));
+        executor.submit(() -> writeToFile(resolvedPath, value));
+        return resolvedPath;
     }
 
     private V removeFromFile(K key) {
-        HashMap<K, V> map = readFile();
-        executor.submit(() -> writeToFile(map));
-        return map.remove(key);
+        Path path = keyPathStorage.get(key);
+        if (path == null) return null;
+        Future<V> value = executor.submit(() -> readFile(path));
+        executor.submit(() -> Files.deleteIfExists(path));
+        try {
+            return value.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Error occurred while reading the file: " + path, e);
+        }
     }
 
     @SuppressWarnings("unchecked")
-    private HashMap<K, V> readFile() {
+    private V readFile(Path path) {
         ByteBuffer buffer = ByteBuffer.allocate(TWO_KB);
-        HashMap<K, V> map;
+        V value;
         try (FileChannel inputChannel = FileChannel.open(path)) {
             inputChannel.read(buffer);
             buffer.flip();
             ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(buffer.array()));
-            map = (HashMap<K, V>) ois.readObject();
+            value = (V) ois.readObject();
             ois.close();
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException("Cannot read from file ", e);
         }
-        return map;
+        return value;
     }
 
-    private void writeToFile(HashMap<K, V> map) {
+    private void writeToFile(Path path, V value) {
         ByteBuffer buffer = ByteBuffer.allocate(TWO_KB);
         try (FileChannel outputChannel = new FileOutputStream(path.toString()).getChannel()) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(map);
+            oos.writeObject(value);
             oos.flush();
             buffer.put(baos.toByteArray());
             buffer.flip();
@@ -153,6 +145,10 @@ public class FileCache<K, V> implements Cache<K, V> {
         } catch (IOException e) {
             throw new RuntimeException("Cannot write to file", e);
         }
+    }
+
+    private String getNewFileName() {
+        return UUID.randomUUID().toString();
     }
 
 }

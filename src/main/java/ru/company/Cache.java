@@ -1,13 +1,15 @@
 package ru.company;
 
+import java.util.Map;
+
 public interface Cache<K, V> {
-    void put(K key, V value);
+    Map<K, V> put(K key, V value);
 
     V remove(K key);
 
     V get(K key);
 
-    void invalidate();
+    Map<K, V> invalidate();
 
     void clear();
 

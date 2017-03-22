@@ -1,6 +1,16 @@
 package ru.company;
 
 import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Key-value {@link Cache} implementaion based on {@link HashMap}
+ *
+ * @param <K> - the type of keys maintained by this map
+ * @param <V> - the type of mapped values
+ * @see FileCache
+ * @see TwoLevelCache
+ */
 
 public class RAMCache<K, V> implements Cache<K, V> {
     private final HashMap<K, V> storage = new HashMap<>();
@@ -13,10 +23,11 @@ public class RAMCache<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public void put(K key, V value) {
-        if (storage.size() >= maxSize) invalidate();
+    public Map<K, V> put(K key, V value) {
         storage.put(key, value);
         invalidator.register(key);
+        if (storage.size() >= maxSize) return invalidate();
+        return null;
     }
 
     @Override
@@ -27,12 +38,17 @@ public class RAMCache<K, V> implements Cache<K, V> {
 
     @Override
     public V get(K key) {
+        invalidator.register(key);
         return storage.get(key);
     }
 
     @Override
-    public void invalidate() {
-        remove(invalidator.getExpiredKey());
+    public Map<K, V> invalidate() {
+        HashMap<K, V> expired = new HashMap<>();
+        K expiredKey = invalidator.getExpiredKey();
+        V value = remove(expiredKey);
+        expired.put(expiredKey, value);
+        return expired;
     }
 
     @Override

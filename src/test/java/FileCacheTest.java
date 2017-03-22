@@ -1,3 +1,4 @@
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.company.FileCache;
@@ -5,11 +6,13 @@ import ru.company.Invalidator;
 import ru.company.SimpleInvalidator;
 import ru.company.SimpleMetadataFactory;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FileCacheTest {
@@ -17,12 +20,23 @@ public class FileCacheTest {
 
     @BeforeEach
     public void init() throws URISyntaxException {
-        URL testFileLocation = Thread.currentThread()
-                .getContextClassLoader()
-                .getResource("testfile.cache");
-        Path path = Paths.get(testFileLocation.toURI());
+        Path path = Paths.get("src/test/resources").toAbsolutePath();
         Invalidator<String> invalidator = new SimpleInvalidator<>(new SimpleMetadataFactory());
         cache = new FileCache<>(path, invalidator, 10);
+    }
+
+    @AfterEach
+    public void cleanUp() throws IOException, InterruptedException {
+        Path path = Paths.get("src/test/resources").toAbsolutePath();
+        //Waiting for asynchronous
+        sleep(1000);
+        Files.list(path).forEach((path1) -> {
+            try {
+                Files.delete(path1);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     @Test
