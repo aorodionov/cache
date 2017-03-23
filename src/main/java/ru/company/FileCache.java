@@ -8,56 +8,56 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class FileCache<K, V> implements Cache<K, V> {
     private static final int TWO_KB = 2048;
     private HashMap<K, Path> keyPathStorage;
     private Invalidator<K> invalidator;
     private int maxSize;
-    private ExecutorService executor;
     private Path directory;
 
     public FileCache(Path directory, Invalidator<K> invalidator, int maxSize) {
         this.invalidator = invalidator;
         this.maxSize = maxSize;
-        this.executor = Executors.newSingleThreadExecutor();
         this.directory = directory;
         this.keyPathStorage = new HashMap<>();
     }
 
     @Override
+    @SuppressWarnings("all")
     public Map<K, V> put(K key, V value) {
-        String newFileName = getNewFileName();
-        Path newPath = putToFile(newFileName, value);
+        Path resolvedPath;
+        if (keyPathStorage.get(key) == null) {
+            String newFileName = getNewFileName();
+            resolvedPath = directory.resolve(newFileName);
+        } else resolvedPath = keyPathStorage.get(key);
+
+        synchronized (resolvedPath) {
+            putToFile(resolvedPath, value);
+        }
         invalidator.register(key);
-        keyPathStorage.put(key, newPath);
-        if (keyPathStorage.size() >= maxSize) return invalidate();
+        keyPathStorage.put(key, resolvedPath);
+        if (keyPathStorage.size() > maxSize) return invalidate();
         return null;
     }
 
     @Override
+    @SuppressWarnings("all")
     public V remove(K key) {
-        V value = removeFromFile(key);
-        invalidator.unregister(key);
-        keyPathStorage.remove(key);
-        return value;
+        synchronized (key) {
+            V value = removeFromFile(key);
+            invalidator.unregister(key);
+            keyPathStorage.remove(key);
+            return value;
+        }
     }
 
     @Override
     public V get(K key) {
         Path path = keyPathStorage.get(key);
         if (path == null || !Files.exists(path)) return null;
-        Future<V> future = executor.submit(() -> readFile(path));
         invalidator.register(key);
-        try {
-            return future.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Error occurred while reading the file ", e);
-        }
+        return readFile(path);
     }
 
     @Override
@@ -71,11 +71,14 @@ public class FileCache<K, V> implements Cache<K, V> {
     }
 
     @Override
+    @SuppressWarnings("all")
     public void clear() {
         try {
             Files.list(directory).forEach((path) -> {
                 try {
-                    Files.delete(path);
+                    synchronized (path) {
+                        Files.deleteIfExists(path);
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException("Error occurred while clearing files", e);
                 }
@@ -92,27 +95,31 @@ public class FileCache<K, V> implements Cache<K, V> {
         return keyPathStorage.size();
     }
 
-    private Path putToFile(String filename, V value) {
-        Path resolvedPath = directory.resolve(filename);
-        if (!Files.exists(resolvedPath)) try {
-            Files.createDirectories(resolvedPath.getParent());
-            Files.createFile(resolvedPath);
+    @SuppressWarnings("all")
+    private void putToFile(Path path, V value) {
+        if (!Files.exists(path)) try {
+            Files.createDirectories(path.getParent());
+            Files.createFile(path);
         } catch (IOException e) {
-            throw new RuntimeException("Error occurred while creating the file: " + resolvedPath, e);
+            throw new RuntimeException("Error occurred while creating the file: " + path, e);
         }
-        executor.submit(() -> writeToFile(resolvedPath, value));
-        return resolvedPath;
+        synchronized (path) {
+            writeToFile(path, value);
+        }
     }
 
+    @SuppressWarnings("all")
     private V removeFromFile(K key) {
         Path path = keyPathStorage.get(key);
         if (path == null) return null;
-        Future<V> value = executor.submit(() -> readFile(path));
-        executor.submit(() -> Files.deleteIfExists(path));
-        try {
-            return value.get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Error occurred while reading the file: " + path, e);
+        synchronized (path) {
+            V value = readFile(path);
+            try {
+                Files.deleteIfExists(path);
+            } catch (IOException e) {
+                throw new RuntimeException("Error occured while deleting the file: " + path, e);
+            }
+            return value;
         }
     }
 

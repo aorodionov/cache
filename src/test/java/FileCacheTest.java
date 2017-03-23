@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutionException;
 
 import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,11 +41,12 @@ public class FileCacheTest {
     }
 
     @Test
-    public void cachePut_SuccessTest() {
+    public void cachePut_SuccessTest() throws ExecutionException, InterruptedException {
         for (int i = 0; i < 50; i++) {
-            cache.put(String.valueOf(i), String.valueOf(i));
+            final int count = i;
+            new Thread(() -> cache.put(String.valueOf(count / 5), String.valueOf(count))).run();
         }
-        assertEquals(cache.size(), 10);
+        assertEquals(10, cache.size());
     }
 
     @Test
