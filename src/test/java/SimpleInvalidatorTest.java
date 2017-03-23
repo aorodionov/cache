@@ -5,7 +5,7 @@ import ru.company.SimpleInvalidator;
 import ru.company.SimpleMetadataFactory;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
 import static java.lang.Thread.sleep;
@@ -15,14 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SimpleInvalidatorTest {
 
     private Invalidator<String> invalidator;
-    private HashMap storage;
+    private ConcurrentHashMap storage;
 
     @BeforeEach
     public void init() throws IllegalAccessException, NoSuchFieldException {
         invalidator = new SimpleInvalidator<>(new SimpleMetadataFactory());
         Field storageField = invalidator.getClass().getDeclaredField("storage");
         storageField.setAccessible(true);
-        storage = (HashMap) storageField.get(invalidator);
+        storage = (ConcurrentHashMap) storageField.get(invalidator);
     }
 
     @Test

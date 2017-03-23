@@ -2,6 +2,7 @@ package ru.company;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class TwoLevelCache<K, V> implements Cache<K, V> {
 
@@ -14,26 +15,28 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public Map<K, V> put(K key, V value) {
-        Map<K, V> displased = firstLevelCache.put(key, value);
-        if (displased != null) {
-            HashMap<K, V> invalidated = new HashMap<>();
-            displased.forEach((k, v) -> invalidated.putAll(secondLevelCache.put(k, v)));
-            return invalidated;
-        }
-        return null;
+    public Optional<Map<K, V>> put(K key, V value) {
+        Map<K, V> displased = firstLevelCache.put(key, value).orElse(new HashMap<>());
+        HashMap<K, V> invalidated = new HashMap<>();
+        displased.forEach((k, v) -> invalidated.putAll(secondLevelCache.put(k, v).orElse(new HashMap<>())));
+        return Optional.of(invalidated);
     }
 
     @Override
-    public V remove(K key) {
+    public Optional<V> remove(K key) {
         if (firstLevelCache.get(key) != null) return firstLevelCache.remove(key);
         return secondLevelCache.remove(key);
     }
 
     @Override
-    public V get(K key) {
+    public Optional<V> get(K key) {
         if (firstLevelCache.get(key) != null) return firstLevelCache.get(key);
-        return secondLevelCache.get(key);
+        Optional<V> value = secondLevelCache.get(key);
+        value.map(v -> firstLevelCache.put(key, v)
+                .orElseGet(HashMap::new))
+                .orElseGet(HashMap::new)
+                .forEach(secondLevelCache::put);
+        return value;
     }
 
     @Override
@@ -54,7 +57,4 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
         return firstLevelCache.size() + secondLevelCache.size();
     }
 
-    private void recache() {
-
-    }
 }

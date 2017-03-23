@@ -15,7 +15,7 @@ public class SimpleMetadata implements Metadata<SimpleMetadata> {
     }
 
     @Override
-    public void update() {
+    public synchronized void update() {
         timesUsed++;
         lastTimeUsed = System.currentTimeMillis();
     }

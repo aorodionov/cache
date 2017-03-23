@@ -11,9 +11,9 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FileCacheTest {
@@ -29,8 +29,6 @@ public class FileCacheTest {
     @AfterEach
     public void cleanUp() throws IOException, InterruptedException {
         Path path = Paths.get("src/test/resources").toAbsolutePath();
-        //Waiting for asynchronous
-        sleep(1000);
         Files.list(path).forEach((path1) -> {
             try {
                 Files.delete(path1);
@@ -44,18 +42,19 @@ public class FileCacheTest {
     public void cachePut_SuccessTest() throws ExecutionException, InterruptedException {
         for (int i = 0; i < 50; i++) {
             final int count = i;
-            new Thread(() -> cache.put(String.valueOf(count / 5), String.valueOf(count))).run();
+            new Thread(() -> cache.put(String.valueOf(count % 5), String.valueOf(count))).run();
         }
-        assertEquals(10, cache.size());
+        assertEquals(5, cache.size());
     }
 
     @Test
     public void cacheGet_SuccessTest() {
         cache.put("One", "Two");
-        assertEquals("Two", cache.get("One"));
+        assertEquals("Two", cache.get("One").orElse(null));
     }
 
     @Test
+    @SuppressWarnings("all")
     public void cacheRemove_SuccessTest() {
         cache.clear();
         cache.put("One", "Two");
@@ -63,8 +62,8 @@ public class FileCacheTest {
         assertEquals(2, cache.size());
         cache.remove("One");
         assertEquals(1, cache.size());
-        assertEquals(null, cache.get("One"));
-        assertEquals("Four", cache.get("Three"));
+        assertEquals(Optional.empty(), cache.get("One"));
+        assertEquals("Four", cache.get("Three").orElse(null));
     }
 
     @Test

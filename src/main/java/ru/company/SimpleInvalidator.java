@@ -1,9 +1,13 @@
 package ru.company;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SimpleInvalidator<K> implements Invalidator<K> {
-    private final HashMap<K, Metadata> storage = new HashMap<>();
+    private final ConcurrentHashMap<K, Metadata> storage = new ConcurrentHashMap<>();
     private final AbstractMetadataFactory factory;
 
     public SimpleInvalidator(AbstractMetadataFactory metadataFactory) {

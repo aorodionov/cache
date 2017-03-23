@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public class FileCache<K, V> implements Cache<K, V> {
@@ -25,7 +26,7 @@ public class FileCache<K, V> implements Cache<K, V> {
 
     @Override
     @SuppressWarnings("all")
-    public Map<K, V> put(K key, V value) {
+    public Optional<Map<K, V>> put(K key, V value) {
         Path resolvedPath;
         if (keyPathStorage.get(key) == null) {
             String newFileName = getNewFileName();
@@ -37,35 +38,34 @@ public class FileCache<K, V> implements Cache<K, V> {
         }
         invalidator.register(key);
         keyPathStorage.put(key, resolvedPath);
-        if (keyPathStorage.size() > maxSize) return invalidate();
-        return null;
+        if (keyPathStorage.size() > maxSize) return Optional.of(invalidate());
+        return Optional.empty();
     }
 
     @Override
     @SuppressWarnings("all")
-    public V remove(K key) {
+    public Optional<V> remove(K key) {
         synchronized (key) {
             V value = removeFromFile(key);
             invalidator.unregister(key);
             keyPathStorage.remove(key);
-            return value;
+            return Optional.ofNullable(value);
         }
     }
 
     @Override
-    public V get(K key) {
+    public Optional<V> get(K key) {
         Path path = keyPathStorage.get(key);
-        if (path == null || !Files.exists(path)) return null;
+        if (path == null || !Files.exists(path)) return Optional.empty();
         invalidator.register(key);
-        return readFile(path);
+        return Optional.ofNullable(readFile(path));
     }
 
     @Override
     public HashMap<K, V> invalidate() {
         HashMap<K, V> expired = new HashMap<>();
         K expiredKey = invalidator.getExpiredKey();
-        V value = remove(expiredKey);
-        expired.put(expiredKey, value);
+        remove(expiredKey).ifPresent(v -> expired.put(expiredKey, v));
         keyPathStorage.remove(expiredKey);
         return expired;
     }

@@ -2,6 +2,8 @@ package ru.company;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Key-value {@link Cache} implementaion based on {@link HashMap}
@@ -13,7 +15,7 @@ import java.util.Map;
  */
 
 public class RAMCache<K, V> implements Cache<K, V> {
-    private final HashMap<K, V> storage = new HashMap<>();
+    private final ConcurrentHashMap<K, V> storage = new ConcurrentHashMap<>();
     private final Invalidator<K> invalidator;
     private final int maxSize;
 
@@ -23,31 +25,30 @@ public class RAMCache<K, V> implements Cache<K, V> {
     }
 
     @Override
-    public Map<K, V> put(K key, V value) {
+    public Optional<Map<K, V>> put(K key, V value) {
         storage.put(key, value);
         invalidator.register(key);
-        if (storage.size() >= maxSize) return invalidate();
-        return null;
+        if (storage.size() > maxSize) return Optional.of(invalidate());
+        return Optional.empty();
     }
 
     @Override
-    public V remove(K key) {
+    public Optional<V> remove(K key) {
         invalidator.unregister(key);
-        return storage.remove(key);
+        return Optional.ofNullable(storage.remove(key));
     }
 
     @Override
-    public V get(K key) {
+    public Optional<V> get(K key) {
         invalidator.register(key);
-        return storage.get(key);
+        return Optional.ofNullable(storage.get(key));
     }
 
     @Override
     public Map<K, V> invalidate() {
         HashMap<K, V> expired = new HashMap<>();
         K expiredKey = invalidator.getExpiredKey();
-        V value = remove(expiredKey);
-        expired.put(expiredKey, value);
+        remove(expiredKey).ifPresent(v -> expired.put(expiredKey, v));
         return expired;
     }
 
