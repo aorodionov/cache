@@ -10,6 +10,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * {@link Cache} implementaion based on hdd storage
+ *
+ * @param <K> - the type of keys maintained by this map
+ * @param <V> - the type of mapped values
+ * @see RAMCache
+ * @see TwoLevelCache
+ */
 public class FileCache<K, V> implements Cache<K, V> {
     private static final int TWO_KB = 2048;
     private HashMap<K, Path> keyPathStorage;

@@ -1,5 +1,5 @@
 package ru.company;
 
-public interface AbstractMetadataFactory<M extends Metadata> {
+public interface AbstractMetadataFactory {
     Metadata getInstance();
 }

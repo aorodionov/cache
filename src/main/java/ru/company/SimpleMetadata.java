@@ -1,5 +1,8 @@
 package ru.company;
 
+/**
+ * LFU implementation of {@link Metadata}.
+ */
 public class SimpleMetadata implements Metadata<SimpleMetadata> {
 
     private static final int ONE_TIME = 1;

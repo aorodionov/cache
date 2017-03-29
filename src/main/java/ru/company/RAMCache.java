@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Key-value {@link Cache} implementaion based on {@link HashMap}
+ * {@link Cache} implementaion based on {@link ConcurrentHashMap}
  *
  * @param <K> - the type of keys maintained by this map
  * @param <V> - the type of mapped values

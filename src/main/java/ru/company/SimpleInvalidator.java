@@ -5,6 +5,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Implementation of {@link Invalidator}.
+ * Process of invalidation based on comparing metadata.
+ *
+ * @param <K> - the type of key
+ */
 public class SimpleInvalidator<K> implements Invalidator<K> {
     private ConcurrentHashMap<K, Metadata> storage = new ConcurrentHashMap<>();
     private AbstractMetadataFactory factory;
@@ -38,7 +44,7 @@ public class SimpleInvalidator<K> implements Invalidator<K> {
                 .sorted(comparing)
                 .findFirst()
                 .map(Map.Entry::getKey)
-                .orElseThrow(() -> new RuntimeException("Empty comparator"));
+                .orElseThrow(() -> new RuntimeException("Empty storage of invalidator"));
     }
 
     @Override
