@@ -4,6 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Two-level implementation of {@link Cache}
+ *
+ * @param <K> - the type of keys maintained by this map
+ * @param <V> - the type of mapped values
+ * @see FileCache
+ * @see RAMCache
+ */
 public class TwoLevelCache<K, V> implements Cache<K, V> {
 
     private Cache<K, V> firstLevelCache;
@@ -39,7 +47,7 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
         Optional<V> value = secondLevelCache.get(key);
         value.map(v -> secondLevelCache.remove(key).get())
                 .map(v -> firstLevelCache.put(key, v)
-                .orElseGet(HashMap::new))
+                        .orElseGet(HashMap::new))
                 .orElseGet(HashMap::new)
                 .forEach(secondLevelCache::put);
         return value;
