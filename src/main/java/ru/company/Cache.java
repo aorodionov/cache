@@ -31,7 +31,7 @@ public interface Cache<K, V> {
 
     /**
      *
-     * @return {@link Map} of invalidate elements
+     * @return {@link Map} of invalidated elements
      */
     Map<K, V> invalidate();
 
