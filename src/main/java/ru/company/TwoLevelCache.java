@@ -18,7 +18,8 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
     public Optional<Map<K, V>> put(K key, V value) {
         Map<K, V> displased = firstLevelCache.put(key, value).orElse(new HashMap<>());
         HashMap<K, V> invalidated = new HashMap<>();
-        displased.forEach((k, v) -> invalidated.putAll(secondLevelCache.put(k, v).orElse(new HashMap<>())));
+        displased.forEach((k, v) -> invalidated.putAll(secondLevelCache.put(k, v)
+                .orElse(new HashMap<>())));
         return Optional.of(invalidated);
     }
 

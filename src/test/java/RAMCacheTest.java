@@ -21,11 +21,12 @@ public class RAMCacheTest {
 
     @Test
     public void cachePut_SuccessTest() {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 76; i++) {
             final int count = i;
-            new Thread(() -> cache.put(String.valueOf(count % 5), String.valueOf(count))).run();
+            new Thread(() -> cache.put(String.valueOf(count), String.valueOf(count))).run();
+            cache.get(String.valueOf(count));
         }
-        Assertions.assertEquals(5, cache.size());
+        Assertions.assertEquals(10, cache.size());
     }
 
     @Test

@@ -40,7 +40,7 @@ public class RAMCache<K, V> implements Cache<K, V> {
 
     @Override
     public Optional<V> get(K key) {
-        invalidator.register(key);
+        invalidator.update(key);
         return Optional.ofNullable(storage.get(key));
     }
 

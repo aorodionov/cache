@@ -40,9 +40,10 @@ public class TwoLevelCacheTest {
 
     @Test
     public void cachePut_SuccessTest() throws ExecutionException, InterruptedException {
-        for (int i = 0; i < 59; i++) {
+        for (int i = 0; i < 76; i++) {
             final int count = i;
             new Thread(() -> cache.put(String.valueOf(count), String.valueOf(count))).run();
+            cache.get(String.valueOf(count / 2));
         }
         assertEquals(20, cache.size());
     }

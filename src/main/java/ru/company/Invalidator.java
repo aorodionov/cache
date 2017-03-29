@@ -5,6 +5,8 @@ public interface Invalidator<K> {
 
     K getExpiredKey();
 
+    void update(K key);
+
     void clear();
 
     void unregister(K key);

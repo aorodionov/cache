@@ -57,7 +57,7 @@ public class FileCache<K, V> implements Cache<K, V> {
     public Optional<V> get(K key) {
         Path path = keyPathStorage.get(key);
         if (path == null || !Files.exists(path)) return Optional.empty();
-        invalidator.register(key);
+        invalidator.update(key);
         return Optional.ofNullable(readFile(path));
     }
 
