@@ -25,15 +25,20 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
 
     @Override
     public Optional<V> remove(K key) {
-        if (firstLevelCache.get(key) != null) return firstLevelCache.remove(key);
+        if (firstLevelCache.get(key).isPresent()) {
+            return firstLevelCache.remove(key);
+        }
         return secondLevelCache.remove(key);
     }
 
     @Override
     public Optional<V> get(K key) {
-        if (firstLevelCache.get(key) != null) return firstLevelCache.get(key);
+        if (firstLevelCache.containsKey(key)) {
+            return firstLevelCache.get(key);
+        }
         Optional<V> value = secondLevelCache.get(key);
-        value.map(v -> firstLevelCache.put(key, v)
+        value.map(v -> secondLevelCache.remove(key).get())
+                .map(v -> firstLevelCache.put(key, v)
                 .orElseGet(HashMap::new))
                 .orElseGet(HashMap::new)
                 .forEach(secondLevelCache::put);
@@ -43,7 +48,9 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
     @Override
     public Map<K, V> invalidate() {
         Map<K, V> invalidated = secondLevelCache.invalidate();
-        if (invalidated == null) return firstLevelCache.invalidate();
+        if (invalidated.isEmpty()) {
+            return firstLevelCache.invalidate();
+        }
         return invalidated;
     }
 
@@ -56,6 +63,11 @@ public class TwoLevelCache<K, V> implements Cache<K, V> {
     @Override
     public int size() {
         return firstLevelCache.size() + secondLevelCache.size();
+    }
+
+    @Override
+    public boolean containsKey(K key) {
+        return firstLevelCache.containsKey(key) || secondLevelCache.containsKey(key);
     }
 
 }

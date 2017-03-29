@@ -27,6 +27,11 @@ public class FileCache<K, V> implements Cache<K, V> {
     @Override
     @SuppressWarnings("all")
     public Optional<Map<K, V>> put(K key, V value) {
+        Optional<Map<K, V>> invalidated = Optional.empty();
+        if (keyPathStorage.size() == maxSize) {
+            invalidated = Optional.ofNullable(invalidate());
+        }
+
         Path resolvedPath;
         if (keyPathStorage.get(key) == null) {
             String newFileName = getNewFileName();
@@ -38,8 +43,7 @@ public class FileCache<K, V> implements Cache<K, V> {
         }
         invalidator.register(key);
         keyPathStorage.put(key, resolvedPath);
-        if (keyPathStorage.size() > maxSize) return Optional.of(invalidate());
-        return Optional.empty();
+        return invalidated;
     }
 
     @Override
@@ -93,6 +97,11 @@ public class FileCache<K, V> implements Cache<K, V> {
     @Override
     public int size() {
         return keyPathStorage.size();
+    }
+
+    @Override
+    public boolean containsKey(K key) {
+        return keyPathStorage.containsKey(key);
     }
 
     @SuppressWarnings("all")

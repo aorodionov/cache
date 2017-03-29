@@ -8,10 +8,14 @@ public class SimpleMetadata implements Metadata<SimpleMetadata> {
 
     @Override
     public int compareTo(SimpleMetadata o) {
-        if (timesUsed > o.timesUsed) return 1;
-        if (timesUsed == o.timesUsed && lastTimeUsed > o.lastTimeUsed) return 1;
-        if (lastTimeUsed == o.lastTimeUsed) return 0;
-        return -1;
+        if (timesUsed > o.timesUsed ||
+                timesUsed == o.timesUsed && lastTimeUsed > o.lastTimeUsed) {
+            return 1;
+        }
+        if (timesUsed < o.timesUsed) {
+            return -1;
+        }
+        return 0;
     }
 
     @Override

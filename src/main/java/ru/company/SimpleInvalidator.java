@@ -1,11 +1,14 @@
 package ru.company;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SimpleInvalidator<K> implements Invalidator<K> {
     private ConcurrentHashMap<K, Metadata> storage = new ConcurrentHashMap<>();
     private AbstractMetadataFactory factory;
+
     public SimpleInvalidator(AbstractMetadataFactory metadataFactory) {
         this.factory = metadataFactory;
     }
@@ -28,11 +31,14 @@ public class SimpleInvalidator<K> implements Invalidator<K> {
     @Override
     @SuppressWarnings("unchecked")
     public K getExpiredKey() {
-        List<Map.Entry<K, Metadata>> list = new ArrayList<>(storage.entrySet());
         Comparator<Map.Entry<K, Metadata>> comparing =
                 Comparator.comparing(entry -> (entry.getValue()));
-        list.sort(comparing);
-        return list.get(0).getKey();
+        return storage.entrySet()
+                .stream()
+                .sorted(comparing)
+                .findFirst()
+                .map(Map.Entry::getKey)
+                .orElseThrow(() -> new RuntimeException("Empty comparator"));
     }
 
     @Override

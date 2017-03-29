@@ -26,10 +26,13 @@ public class RAMCache<K, V> implements Cache<K, V> {
 
     @Override
     public Optional<Map<K, V>> put(K key, V value) {
+        Optional<Map<K, V>> invalidated = Optional.empty();
+        if (storage.size() == maxSize) {
+            invalidated = Optional.ofNullable(invalidate());
+        }
         storage.put(key, value);
         invalidator.register(key);
-        if (storage.size() > maxSize) return Optional.of(invalidate());
-        return Optional.empty();
+        return invalidated;
     }
 
     @Override
@@ -61,5 +64,10 @@ public class RAMCache<K, V> implements Cache<K, V> {
     @Override
     public int size() {
         return storage.size();
+    }
+
+    @Override
+    public boolean containsKey(K key) {
+        return storage.containsKey(key);
     }
 }
